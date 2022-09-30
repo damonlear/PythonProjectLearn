@@ -1,8 +1,15 @@
 # Project Specific
+# 编译文件忽略
 .idea
+# 编译文件忽略
 /build
+# yixiaoneng.py生成的spec忽略
 *.zip
+*.exe
+# yixiaoneng.py生成的spec忽略
 *.spec
+# 生成的日期文件忽略
+*-*-*/
 
 
 

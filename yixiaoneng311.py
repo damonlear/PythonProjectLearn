@@ -65,7 +65,9 @@ def readSouceGroup():
                 arrays.append(line)
     return arrays
 
+# 核心代码
 # 网络上实际的签到人数
+# 参考https://edu2.yixiaoneng.com/f/fwzCUQ/s/C4ypA4?q%5B0%5D%5Bfield_1%5D=2022-09-30&q%5B0%5D%5Bfield_2_associated_field_3%5D=rZLB&embedded=
 def requestQiandao(url):
     # 密码311
     cookies = {"rs_token_C4ypA4": "311"}
@@ -87,6 +89,37 @@ def requestQiandao(url):
     # print(company_item)
     # print(dd)
     # array.append(dd)
+
+    for index in range(len(name_items)):
+        n = name_items[index].text.strip()
+        i = id_items[index].text.strip()
+
+        array.append(i + n)
+
+    if len(array) == 0:
+        for one in requestOnlyOneQiandao(url):
+            array.append(one)
+    array.sort()
+    return array
+
+# 只有一个人时，整个页面就变了
+# 参考https://edu2.yixiaoneng.com/f/fwzCUQ/s/C4ypA4/e/u5P9BO23?q%5B0%5D%5Bfield_1%5D=2022-09-30&q%5B0%5D%5Bfield_2_associated_field_3%5D=rZLB
+def requestOnlyOneQiandao(url):
+    # 密码311
+    cookies = {"rs_token_C4ypA4": "311"}
+    page = requests.get(url
+                        , cookies=cookies
+                        )
+    # print(page.text)
+
+    page.encoding = "utf-8"
+    # 网页格式化
+    soup = BeautifulSoup(page.text, features="html.parser")
+    # 学员名字 找td标签属性为name-field的内容
+    name_items = soup.find_all("span", {"data-display-field-type":"name-field"})
+    # 学员学号
+    id_items = soup.find_all("span", {"data-display-field-type":"cascade-drop-down"})
+    array = []
 
     for index in range(len(name_items)):
         n = name_items[index].text.strip()
@@ -245,18 +278,24 @@ if __name__ == '__main__':
     init()
     # 获取输入的日期
     yyyyMMdd = getInputTime()
-    # 初始化文件
-    os.mkdir(yyyyMMdd)
+    # 初始化文件夹
+    if not os.path.isdir(yyyyMMdd):
+        os.mkdir(yyyyMMdd)
+    # 输出文件的数据流
     fTotal = open('{}/{}简单统计.txt'.format(yyyyMMdd, yyyyMMdd), 'w+', encoding='utf-8')
     fno = open('{}/{}未打卡人员名单.txt'.format(yyyyMMdd, yyyyMMdd), 'w+', encoding='utf-8')
     fWechat = open('{}/{}发微信信息.txt'.format(yyyyMMdd, yyyyMMdd), 'w+', encoding='utf-8')
 
+    # 全员名单-基数
     # 读取本地名单
     arraysAll = readSouceGroup()
-    # 遍历每组对应的查询今日签到的URL
+    # 核心代码：遍历每组对应的查询今日签到的URL
     for group_name, group_url in group_url.items():
         realUrl = group_url.format(yyyyMMdd)
+
+        # 核心代码：爬虫核心 一切数据的基数
         # 统计组group_name来自网络打卡人员的集合
+        # 已签到
         tmpGroup = requestQiandao(realUrl)
         # 统计取这组的人数，目前写死
         tmpAll = getGroupPeopleCount(realUrl, yyyyMMdd)
@@ -264,12 +303,15 @@ if __name__ == '__main__':
         print("网上签到情况={}".format(tmpGroup))
         print('签到情况统计=[{}][实到:{}][应到:{}]'.format(group_name, len(tmpGroup), tmpAll))
 
+        # 写文件用
         fTotal.write("{}：实到{}，应到{}".format(group_name, len(tmpGroup), tmpAll) + os.linesep)
         # 统计用
         group_count[group_name] = len(tmpGroup)
 
         if len(tmpGroup) != tmpAll:
             print("-->【签到异常】{}应到{}实到{}".format(group_name, len(tmpGroup), tmpAll))
+
+        # 核心查找没签到的代码，剔除已经签到，剩下就是没有签到，已经签到的
         for i in tmpGroup:
             for j in arraysAll:
                 if getLinkSampleStr(i, j) != '':
@@ -299,10 +341,18 @@ if __name__ == '__main__':
     fno.close()
     fWechat.close()
 
+    print("打开生成的微信群发统计消息文件")
     os.system("notepad {} ".format(fWechat.name))
+
+    print("打开生成的没打卡人员名单")
     os.system("notepad {} ".format(fno.name))
+
+    print("打开输出目录")
+    os.system("explorer {}".format(yyyyMMdd))
+
     print("执行结束")
     print("文件保存在根目录")
+
     os.system("pause")
 
 
