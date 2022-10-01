@@ -45,6 +45,8 @@ group_count = {'A组': 1,
                'G组': 6,
                'I组': 7
              }
+# 用于输出统计完成
+group_out_finish = []
 
 
 def readSouceGroup():
@@ -185,6 +187,7 @@ def init():
     print("仅支持Windows电脑系统使用")
     print("--------------------------------------------")
     print("--------------------------------------------")
+    group_out_finish.clear()
 
 def getlocalStrTime(formate = date_format_default):
     times = time.time()
@@ -310,6 +313,8 @@ if __name__ == '__main__':
 
         if len(tmpGroup) != tmpAll:
             print("-->【签到异常】{}应到{}实到{}".format(group_name, len(tmpGroup), tmpAll))
+        else:
+            group_out_finish.append(group_name)
 
         # 核心查找没签到的代码，剔除已经签到，剩下就是没有签到，已经签到的
         for i in tmpGroup:
@@ -320,10 +325,19 @@ if __name__ == '__main__':
                     break
 
     print('--------------------------------------------')
-    print("未签到：{}".format(arraysAll))
-    print('--------------------------------------------')
-
     # os.linesep代表当前操作系统上的换行符
+    fTotal.write('完成打卡的小组:')
+    for fg in group_out_finish:
+        fTotal.write(fg + "、")
+    fTotal.write(os.linesep)
+    print("完成打卡的小组：{}".format(group_out_finish))
+
+    print('--------------------------------------------')
+    print('-->')
+    print("未签到：{}".format(arraysAll))
+    print('-->')
+    print('--------------------------------------------')
+    # 未签到人员名单
     fno.write('未签到名单' + "\n")
     for no in arraysAll:
         fno.write(no + "\n")
@@ -341,14 +355,19 @@ if __name__ == '__main__':
     fno.close()
     fWechat.close()
 
-    print("打开生成的微信群发统计消息文件")
-    os.system("notepad {} ".format(fWechat.name))
+    print("打开输出目录")
+    os.system("explorer {}".format(yyyyMMdd))
+
+    time.sleep(0.5)
 
     print("打开生成的没打卡人员名单")
     os.system("notepad {} ".format(fno.name))
 
-    print("打开输出目录")
-    os.system("explorer {}".format(yyyyMMdd))
+    print("打开生成的微信群发统计消息文件")
+    os.system("notepad {} ".format(fWechat.name))
+
+    print("打开生成的完成小组统计文件")
+    os.system("notepad {} ".format(fTotal.name))
 
     print("执行结束")
     print("文件保存在根目录")
